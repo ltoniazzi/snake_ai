@@ -3,12 +3,27 @@ from random import randint
 import pygame
 import time
 import pandas as pd
+from agent.agents import TwoLayerAgent
 
 
 class LogGameState:
-    def __init__(self) -> None:
-        self.columns = ["PlayerX", "PlayerY", "AppleX", "AppleY", "Direction", "DirectionNew", "Score", "ScoreDiff"]  # Direction after action, add direction pre action
-        self.df = pd.DataFrame(columns=self.columns)
+    def __init__(self, data_path=None) -> None:
+        self.columns = [
+            "PlayerX",
+            "PlayerY",
+            "AppleX",
+            "AppleY",
+            "Direction",
+            "DirectionNew",
+            "Score",
+            "ScoreDiff",
+        ]  # Direction after action, add direction pre action
+        self.data_path = data_path
+
+        if self.data_path is not None:
+            self.df = pd.read_csv(data_path)
+        else:
+            self.df = pd.DataFrame(columns=self.columns)
 
     def add_state(self, game_state=None, score=None, current_direction=None):
         # use pandas to save state + action + outcome
@@ -25,9 +40,10 @@ class LogGameState:
         self.df = pd.concat([self.df, new_state], axis=0)
 
         print(self.df)
-    
-    def save_states():
-        pass
+
+    def save_states(self, data_path=None):
+
+        self.df.to_csv(data_path)
 
 
 class AgentRuleBased:
@@ -59,7 +75,7 @@ class AgentRuleBased:
 
         if player_y <= apple_y:
             print("yforw")
-            if player_x >= apple_x -50:
+            if player_x >= apple_x - 50:
                 print("yforw")
                 if direction == 0 or direction == 1:
                     self.action["K_DOWN"] = True
@@ -170,8 +186,6 @@ class App:
 
     windowWidth = 800
     windowHeight = 600
-    player = None
-    apple = None
 
     def __init__(self):
         self._running = True
@@ -183,7 +197,8 @@ class App:
         self.apple = Apple(300, 300)
         self.score = 0
         self.scale_img = 1
-        self.log_game_state = LogGameState()
+        self.data_path = "./data/data.csv"
+        self.log_game_state = LogGameState(data_path=self.data_path)
 
         self.agent = AgentRuleBased()
         self.game_state = {
@@ -202,14 +217,14 @@ class App:
 
         pygame.display.set_caption(f"Score: {self.score}")
         self._running = True
-        self._image_surf = pygame.image.load("snake.jpg").convert()
+        self._image_surf = pygame.image.load("assets/snake.jpg").convert()
         self._image_dest_rect = pygame.Rect(
             0,
             0,
             self._image_surf.get_width() // self.scale_img,
             self._image_surf.get_height() // self.scale_img,
         )
-        self._apple_surf = pygame.image.load("apple.jpg").convert()
+        self._apple_surf = pygame.image.load("assets/apple.jpg").convert()
         self._apple_dest_rect = pygame.Rect(
             0,
             0,
@@ -221,14 +236,20 @@ class App:
         if event.type == QUIT:
             self._running = False
 
+    def on_cleanup(self):
+        self.log_game_state.save_states(data_path=self.data_path)
+        pygame.quit()
+
     def on_loop(self):
         self.player.update()
 
+        # does snake eat hit the walls?
         if self.game.isCollisionWall(
             self.player.x[0], self.player.y[0], self.windowWidth, self.windowHeight
         ):
             print("You lose! Collision: you hit the wall man")
             print("x[0] (" + str(self.player.x[0]) + "," + str(self.player.y[0]) + ")")
+            self.on_cleanup()
             exit(0)
 
         # does snake eat apple?
@@ -264,6 +285,7 @@ class App:
                     + str(self.player.y[i])
                     + ")"
                 )
+                self.on_cleanup()
                 exit(0)
 
         pass
@@ -275,9 +297,6 @@ class App:
         pygame.transform.flip(self._display_surf, False, False)
         pygame.display.set_caption(f"Score: {self.score}")
         pygame.display.flip()
-
-    def on_cleanup(self):
-        pygame.quit()
 
     def on_execute(self):
         if self.on_init() == False:
@@ -305,7 +324,6 @@ class App:
             if keys[K_ESCAPE]:
                 self._running = False
 
-
             # AI input
             self.agent.act(self.game_state)
             if self.agent.action["K_RIGHT"]:
@@ -320,8 +338,10 @@ class App:
             if self.agent.action["K_DOWN"]:
                 self.player.moveDown()
 
-            self.log_game_state.add_state(self.game_state, score=self.score, current_direction=current_direction)
-            
+            self.log_game_state.add_state(
+                self.game_state, score=self.score, current_direction=current_direction
+            )
+
             self.on_loop()
             self.on_render()
 

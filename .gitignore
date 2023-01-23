@@ -1,6 +1,6 @@
 # Folders
-./assets
-./data
+assets/
+data/
 
 
 # Byte-compiled / optimized / DLL files

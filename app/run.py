@@ -3,7 +3,7 @@ from random import randint
 import pygame
 import time
 import pandas as pd
-from agent.agents import TwoLayerAgent
+from agents.agents import TwoLayerAgent
 
 
 class LogGameState:
@@ -39,7 +39,7 @@ class LogGameState:
         new_state = pd.DataFrame(new_state, index=[self.df.shape[0]])
         self.df = pd.concat([self.df, new_state], axis=0)
 
-        print(self.df)
+        # print(self.df)
 
     def save_states(self, data_path=None):
 
@@ -51,7 +51,7 @@ class AgentRuleBased:
 
         self.action = None
 
-    def act(self, game_state=None):
+    def infer(self, game_state=None):
 
         self.action = {
             "K_RIGHT": False,
@@ -200,7 +200,9 @@ class App:
         self.data_path = "./data/data.csv"
         self.log_game_state = LogGameState(data_path=self.data_path)
 
-        self.agent = AgentRuleBased()
+        # self.agent = AgentRuleBased()
+        self.agent = TwoLayerAgent(input_dim=3, output_dim=4)
+        
         self.game_state = {
             "Player": self.player,
             "Apple": self.apple,

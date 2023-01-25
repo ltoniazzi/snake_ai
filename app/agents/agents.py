@@ -2,6 +2,16 @@ import torch
 import torch.nn as nn
 import torch.nn.functional as F
 
+# class Agent:
+
+#     def __init__(self) -> None:
+        
+#         self.action = {
+#             "K_RIGHT": False,
+#             "K_LEFT": False,
+#             "K_UP": False,
+#             "K_DOWN": False,
+#         }
 
 class TwoLayerAgent(nn.Module):
     def __init__(
@@ -14,6 +24,14 @@ class TwoLayerAgent(nn.Module):
 
         self.dense1 = nn.Linear(self.input_dim, self.hidden_dim)
         self.dense2 = nn.Linear(self.hidden_dim, self.output_dim)
+
+        self.action = {
+            "K_RIGHT": False,
+            "K_LEFT": False,
+            "K_UP": False,
+            "K_DOWN": False,
+        }
+
 
     def forward(self, input: torch.Tensor):
         """_summary_
@@ -38,11 +56,39 @@ class TwoLayerAgent(nn.Module):
 
     def infer(self, input):
 
+        if not type(input) == torch.Tensor:
+
+            input = torch.Tensor([input["Player"].x[:3]])
+
         output = self.forward(input)
 
-        action, _ = torch.max(output, dim=-1, keepdim=False)
+        action, index = torch.max(output, dim=-1, keepdim=False)
 
-        return action
+        return action, index
+
+    def act(self, input):
+
+        self.action = {
+            "K_RIGHT": False,
+            "K_LEFT": False,
+            "K_UP": False,
+            "K_DOWN": False,
+        }
+
+        action, index = self.infer(input)
+
+        if index[0] == 0:
+            self.action["K_RIGHT"] = True
+        elif index[0] == 1:
+            self.action["K_LEFT"] = True
+
+        elif index[0] == 2:
+            self.action["K_UP"] = True
+
+        elif index[0] == 3:
+            self.action["K_DOWN"] = True
+
+
 
 
 if __name__ == "__main__":
@@ -60,6 +106,8 @@ if __name__ == "__main__":
     agent.forward(input)
 
     print(agent.infer(input))
+
+    print(agent.action)
 
 
 """

@@ -15,7 +15,7 @@ import torch.nn.functional as F
 
 class TwoLayerAgent(nn.Module):
     def __init__(
-        self, input_dim: int = 3 * 2 + 1 * 2 + 1, output_dim: int = 4, hidden_dim=512
+        self, input_dim: int = 3 * 2 + 1 * 2 + 1, output_dim: int = 4, hidden_dim=256
     ) -> None:
         super().__init__()
         self.input_dim = input_dim
@@ -58,7 +58,7 @@ class TwoLayerAgent(nn.Module):
 
         if not type(input) == torch.Tensor:
 
-            input = torch.Tensor([input["Player"].x[:3]])
+            input = torch.Tensor([input["Player"].x[:3] + input["Player"].y[:3] + [input["Apple"].x] + [input["Apple"].y] + [input["Player"].direction ]  ])
 
         output = self.forward(input)
 
@@ -87,6 +87,47 @@ class TwoLayerAgent(nn.Module):
 
         elif index[0] == 3:
             self.action["K_DOWN"] = True
+
+
+
+
+
+
+class AgentRuleBased:
+    def __init__(self) -> None:
+
+        self.action = None
+
+    def infer(self, game_state=None):
+
+        self.action = {
+            "K_RIGHT": False,
+            "K_LEFT": False,
+            "K_UP": False,
+            "K_DOWN": False,
+        }
+
+        direction = game_state["Player"].direction
+        player_x = game_state["Player"].x[0]
+        player_y = game_state["Player"].y[0]
+        apple_x = game_state["Apple"].x
+        apple_y = game_state["Apple"].y
+
+        # print(f"{player_x=}")
+        # print(f"{apple_x=}")
+        # print(f"{player_y=}")
+        # print(f"{apple_y=}")
+        # print(f"{direction=}")
+        # print(f"\n")
+
+        if player_y <= apple_y:
+            print("yforw")
+            if player_x >= apple_x - 50:
+                print("yforw")
+                if direction == 0 or direction == 1:
+                    self.action["K_DOWN"] = True
+                # elif direction == 2 or direction == 3:
+                #     self.action["K_LEFT"] = True
 
 
 

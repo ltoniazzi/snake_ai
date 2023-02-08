@@ -36,7 +36,7 @@ class SnakeLoss(nn.Module):
 
         predicted_reward = torch.mul(proba_of_chosen_direction, score)
 
-        return -torch.sum(predicted_reward)
+        return torch.sum(predicted_reward)
 
 
 if __name__ == "__main__":

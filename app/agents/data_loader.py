@@ -1,15 +1,25 @@
 import pandas as pd
 from torch.utils.data import Dataset
+import numpy as np
 import torch
 import ast
+
+def score_rule(x):
+    out = 0.1*np.ones(x.shape[0])
+    # Todo take min 
+
+    out[-3:] = np.ones(3)
+
+    return pd.DataFrame(out, index=x.index)
 
 
 class GameData(Dataset):
     def __init__(self, game_frames, transform=None, target_transform=None):
         self.df = pd.read_csv(game_frames)
+        self.df = self.df.assign(Score=self.df.groupby(["GameId"], group_keys=False)["Score"].apply(score_rule))
         self.score = self.df.Score
-        self.game_state = self.df["PlayerX"].apply(lambda x: ast.literal_eval(x))
-        self.direction = self.df["Direction"]
+        self.game_state = self.df["PlayerX"].apply(lambda x: ast.literal_eval(x)) + self.df["PlayerY"].apply(lambda x: ast.literal_eval(x)) + self.df["AppleX"].apply(lambda x: [x]) + self.df["AppleY"].apply(lambda x: [x]) + self.df["Direction"].apply(lambda x: [x])
+        self.direction = self.df["DirectionNew"]
         self.transform = transform
         self.target_transform = target_transform
 
@@ -33,7 +43,7 @@ if __name__ == "__main__":
 
     data_path = "/home/mas/Github/snake/snake_ai/data/data.csv"
 
-    dl = DataLoader(data_path)
+    dl = GameData(data_path)
 
     dl[0]
 

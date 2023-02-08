@@ -2,86 +2,9 @@ from pygame.locals import *
 from random import randint
 import pygame
 import time
-import pandas as pd
+from datetime import datetime
+from logger.logger import LogGameState
 from agents.agents import TwoLayerAgent
-
-
-class LogGameState:
-    def __init__(self, data_path=None) -> None:
-        self.columns = [
-            "PlayerX",
-            "PlayerY",
-            "AppleX",
-            "AppleY",
-            "Direction",
-            "DirectionNew",
-            "Score",
-            "ScoreDiff",
-        ]  # Direction after action, add direction pre action
-        self.data_path = data_path
-
-        if self.data_path is not None:
-            self.df = pd.read_csv(data_path)
-        else:
-            self.df = pd.DataFrame(columns=self.columns)
-
-    def add_state(self, game_state=None, score=None, current_direction=None):
-        # use pandas to save state + action + outcome
-        new_state = {
-            "PlayerX": [game_state["Player"].x[:3]],
-            "PlayerY": [game_state["Player"].y[:3]],
-            "AppleX": [game_state["Apple"].y],
-            "AppleY": [game_state["Apple"].y],
-            "Direction": [current_direction],
-            "DirectionNew": [game_state["Player"].direction],
-            "Score": [score],
-        }
-        new_state = pd.DataFrame(new_state, index=[self.df.shape[0]])
-        self.df = pd.concat([self.df, new_state], axis=0)
-
-        # print(self.df)
-
-    def save_states(self, data_path=None):
-
-        self.df.to_csv(data_path)
-
-
-class AgentRuleBased:
-    def __init__(self) -> None:
-
-        self.action = None
-
-    def infer(self, game_state=None):
-
-        self.action = {
-            "K_RIGHT": False,
-            "K_LEFT": False,
-            "K_UP": False,
-            "K_DOWN": False,
-        }
-
-        direction = game_state["Player"].direction
-        player_x = game_state["Player"].x[0]
-        player_y = game_state["Player"].y[0]
-        apple_x = game_state["Apple"].x
-        apple_y = game_state["Apple"].y
-
-        # print(f"{player_x=}")
-        # print(f"{apple_x=}")
-        # print(f"{player_y=}")
-        # print(f"{apple_y=}")
-        # print(f"{direction=}")
-        # print(f"\n")
-
-        if player_y <= apple_y:
-            print("yforw")
-            if player_x >= apple_x - 50:
-                print("yforw")
-                if direction == 0 or direction == 1:
-                    self.action["K_DOWN"] = True
-                # elif direction == 2 or direction == 3:
-                #     self.action["K_LEFT"] = True
-
 
 class Apple:
     def __init__(self, x, y):
@@ -97,14 +20,18 @@ class Apple:
 
 
 class Player:
-    def __init__(self, length):
+    def __init__(self, length, random_start=True):
         self.step = 44
-        self.x = [self.step]
-        self.y = [self.step]
+        if random_start:
+            self.x = [randint(88, 500)]
+            self.y = [randint(88, 500)]
+        else:
+            self.x = [self.step]
+            self.y = [self.step]
         self.direction = 0
         self.length = 3
 
-        self.updateCountMax = 2
+        self.updateCountMax = 0
         self.updateCount = 0
         self.length = length
         for i in range(0, 200):
@@ -143,16 +70,20 @@ class Player:
             self.updateCount = 0
 
     def moveRight(self):
-        self.direction = 0
+        if self.direction != 1:
+            self.direction = 0
 
     def moveLeft(self):
-        self.direction = 1
+        if self.direction != 0:
+            self.direction = 1
 
     def moveUp(self):
-        self.direction = 2
+        if self.direction != 3:
+            self.direction = 2
 
     def moveDown(self):
-        self.direction = 3
+        if self.direction != 2:
+            self.direction = 3
 
     def draw(self, surface, image, dest_rect):
         for i in range(0, self.length):
@@ -188,6 +119,7 @@ class App:
     windowHeight = 600
 
     def __init__(self):
+        self.game_id = datetime.now()
         self._running = True
         self._display_surf = None
         self._image_surf = None
@@ -201,9 +133,10 @@ class App:
         self.log_game_state = LogGameState(data_path=self.data_path)
 
         # self.agent = AgentRuleBased()
-        self.agent = TwoLayerAgent(input_dim=3, output_dim=4)
+        self.agent = TwoLayerAgent( output_dim=4)
         
         self.game_state = {
+            "GameId": self.game_id,
             "Player": self.player,
             "Apple": self.apple,
             "Width": self.windowWidth,
@@ -239,7 +172,7 @@ class App:
             self._running = False
 
     def on_cleanup(self):
-        self.log_game_state.save_states(data_path=self.data_path)
+        self.log_game_state.save_states(data_path="/home/mas/Github/snake/snake_ai/data/data.csv")
         pygame.quit()
 
     def on_loop(self):
@@ -340,6 +273,7 @@ class App:
             if self.agent.action["K_DOWN"]:
                 self.player.moveDown()
 
+            
             self.log_game_state.add_state(
                 self.game_state, score=self.score, current_direction=current_direction
             )
@@ -353,5 +287,7 @@ class App:
 
 
 if __name__ == "__main__":
+    # n_games = 500
+    # for game in range(n_games):
     theApp = App()
     theApp.on_execute()

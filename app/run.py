@@ -6,6 +6,7 @@ from datetime import datetime
 from logger.logger import LogGameState
 from agents.agents import TwoLayerAgent
 
+
 class Apple:
     def __init__(self, x, y):
         self.x = x
@@ -133,8 +134,14 @@ class App:
         self.log_game_state = LogGameState(data_path=self.data_path)
 
         # self.agent = AgentRuleBased()
-        self.agent = TwoLayerAgent( output_dim=4)
-        
+        # self.agent = TwoLayerAgent(output_dim=4)
+        self.agent = TwoLayerAgent(output_dim=4)
+        import torch
+
+        self.agent.load_state_dict(
+            torch.load("/home/mas/Github/snake/snake_ai/model_20230213_171213_4")
+        )
+
         self.game_state = {
             "GameId": self.game_id,
             "Player": self.player,
@@ -172,7 +179,9 @@ class App:
             self._running = False
 
     def on_cleanup(self):
-        self.log_game_state.save_states(data_path="/home/mas/Github/snake/snake_ai/data/data.csv")
+        self.log_game_state.save_states(
+            data_path="/home/mas/Github/snake/snake_ai/data/data.csv"
+        )
         pygame.quit()
 
     def on_loop(self):
@@ -273,7 +282,6 @@ class App:
             if self.agent.action["K_DOWN"]:
                 self.player.moveDown()
 
-            
             self.log_game_state.add_state(
                 self.game_state, score=self.score, current_direction=current_direction
             )

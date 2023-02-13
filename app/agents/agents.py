@@ -1,17 +1,8 @@
 import torch
 import torch.nn as nn
 import torch.nn.functional as F
+import torch.nn.init as init
 
-# class Agent:
-
-#     def __init__(self) -> None:
-        
-#         self.action = {
-#             "K_RIGHT": False,
-#             "K_LEFT": False,
-#             "K_UP": False,
-#             "K_DOWN": False,
-#         }
 
 class TwoLayerAgent(nn.Module):
     def __init__(
@@ -25,13 +16,15 @@ class TwoLayerAgent(nn.Module):
         self.dense1 = nn.Linear(self.input_dim, self.hidden_dim)
         self.dense2 = nn.Linear(self.hidden_dim, self.output_dim)
 
+        init.kaiming_normal_(self.dense1.weight)
+        init.kaiming_normal_(self.dense2.weight)
+
         self.action = {
             "K_RIGHT": False,
             "K_LEFT": False,
             "K_UP": False,
             "K_DOWN": False,
         }
-
 
     def forward(self, input: torch.Tensor):
         """_summary_
@@ -58,9 +51,20 @@ class TwoLayerAgent(nn.Module):
 
         if not type(input) == torch.Tensor:
 
-            input = torch.Tensor([input["Player"].x[:3] + input["Player"].y[:3] + [input["Apple"].x] + [input["Apple"].y] + [input["Player"].direction ]  ])
+            input = torch.Tensor(
+                [
+                    input["Player"].x[:3]
+                    + input["Player"].y[:3]
+                    + [input["Apple"].x]
+                    + [input["Apple"].y]
+                    + [input["Player"].direction]
+                ]
+            )
+            input = (input - input.mean()) / input.std()
 
         output = self.forward(input)
+
+        print(f"{output=}")
 
         action, index = torch.max(output, dim=-1, keepdim=False)
 
@@ -87,10 +91,6 @@ class TwoLayerAgent(nn.Module):
 
         elif index[0] == 3:
             self.action["K_DOWN"] = True
-
-
-
-
 
 
 class AgentRuleBased:
@@ -128,8 +128,6 @@ class AgentRuleBased:
                     self.action["K_DOWN"] = True
                 # elif direction == 2 or direction == 3:
                 #     self.action["K_LEFT"] = True
-
-
 
 
 if __name__ == "__main__":

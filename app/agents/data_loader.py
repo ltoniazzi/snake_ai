@@ -4,11 +4,12 @@ import numpy as np
 import torch
 import ast
 
-def score_rule(x):
-    out = 0.1*np.ones(x.shape[0])
-    # Todo take min 
 
-    out[-3:] = np.ones(3)
+def score_rule(x):
+    out = -0.1 * np.ones(x.shape[0])
+    # Todo take min
+
+    out[-3:] = 10 * np.ones(3)
 
     return pd.DataFrame(out, index=x.index)
 
@@ -16,9 +17,19 @@ def score_rule(x):
 class GameData(Dataset):
     def __init__(self, game_frames, transform=None, target_transform=None):
         self.df = pd.read_csv(game_frames)
-        self.df = self.df.assign(Score=self.df.groupby(["GameId"], group_keys=False)["Score"].apply(score_rule))
+        self.df = self.df.assign(
+            Score=self.df.groupby(["GameId"], group_keys=False)["Score"].apply(
+                score_rule
+            )
+        )
         self.score = self.df.Score
-        self.game_state = self.df["PlayerX"].apply(lambda x: ast.literal_eval(x)) + self.df["PlayerY"].apply(lambda x: ast.literal_eval(x)) + self.df["AppleX"].apply(lambda x: [x]) + self.df["AppleY"].apply(lambda x: [x]) + self.df["Direction"].apply(lambda x: [x])
+        self.game_state = (
+            self.df["PlayerX"].apply(lambda x: ast.literal_eval(x))
+            + self.df["PlayerY"].apply(lambda x: ast.literal_eval(x))
+            + self.df["AppleX"].apply(lambda x: [x])
+            + self.df["AppleY"].apply(lambda x: [x])
+            + self.df["Direction"].apply(lambda x: [x])
+        )
         self.direction = self.df["DirectionNew"]
         self.transform = transform
         self.target_transform = target_transform
@@ -28,6 +39,7 @@ class GameData(Dataset):
 
     def __getitem__(self, idx):
         game_state = torch.Tensor(self.game_state.iloc[idx])
+        game_state = (game_state - game_state.mean()) / game_state.std()
         score = torch.Tensor([self.score.iloc[idx]])
         direction = torch.Tensor([self.direction[idx]]).to(torch.int64)
         if self.transform:
